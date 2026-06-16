@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using Monopoly.Board;
 using Monopoly.Core;
 using UnityEngine;
@@ -20,6 +21,16 @@ namespace Monopoly.Player
         public PlayerData PlayerData => playerData;
         public BoardTile CurrentTile => currentNode != null ? currentNode.Tile : null;
 
+        private void Awake()
+        {
+            TryRecoverCurrentNode();
+        }
+
+        private void Start()
+        {
+            TryRecoverCurrentNode();
+        }
+
         public void Initialize(BoardManager manager, PlayerDecisionController controller, PlayerData data, PathNode startNode)
         {
             boardManager = manager;
@@ -27,14 +38,14 @@ namespace Monopoly.Player
             playerData = data;
             currentNode = startNode;
 
-            if (currentNode != null)
-            {
-                transform.position = currentNode.StandPoint.position;
-            }
+            SnapToCurrentNodeIfPossible();
         }
 
         public void BeginMove(int steps, Action onMoveFinished)
         {
+            TryRecoverCurrentNode();
+            Debug.Log($"Player BeginMove called. Steps={steps}, IsMoving={isMoving}, CurrentNode={(currentNode != null ? currentNode.NodeId : "null")}, BoardManager={(boardManager != null)}");
+
             if (!isMoving)
             {
                 StartCoroutine(MoveStepsRoutine(steps, onMoveFinished));
@@ -50,9 +61,11 @@ namespace Monopoly.Player
                 PathNode nextNode = boardManager != null ? boardManager.GetNextNode(currentNode) : null;
                 if (nextNode == null)
                 {
+                    Debug.LogWarning($"Player movement stopped early at step {i + 1}/{steps}: next node is null.");
                     break;
                 }
 
+                Debug.Log($"Player moving from {(currentNode != null ? currentNode.NodeId : "null")} to {nextNode.NodeId}");
                 currentNode = nextNode;
                 yield return MoveToPosition(currentNode.StandPoint.position);
             }
@@ -70,6 +83,74 @@ namespace Monopoly.Player
             }
 
             transform.position = targetPosition;
+        }
+
+        private void TryRecoverCurrentNode()
+        {
+            if (boardManager == null)
+            {
+                boardManager = FindObjectOfType<BoardManager>();
+            }
+
+            if (currentNode != null)
+            {
+                return;
+            }
+
+            if (boardManager != null && boardManager.StartNode != null)
+            {
+                currentNode = boardManager.StartNode;
+                SnapToCurrentNodeIfPossible();
+                Debug.Log($"PlayerPawn recovered start node: {currentNode.NodeId}");
+                return;
+            }
+
+            PathNode[] allNodes = FindObjectsOfType<PathNode>();
+            if (allNodes == null || allNodes.Length == 0)
+            {
+                return;
+            }
+
+            PathNode startTileNode = allNodes.FirstOrDefault(node => node != null && node.Tile is StartTile);
+            if (startTileNode != null)
+            {
+                currentNode = startTileNode;
+                SnapToCurrentNodeIfPossible();
+                Debug.Log($"PlayerPawn recovered start node from StartTile: {currentNode.NodeId}");
+                return;
+            }
+
+            PathNode namedStartNode = allNodes.FirstOrDefault(node =>
+                node != null &&
+                !string.IsNullOrEmpty(node.NodeId) &&
+                node.NodeId.IndexOf("00", StringComparison.OrdinalIgnoreCase) >= 0);
+
+            if (namedStartNode != null)
+            {
+                currentNode = namedStartNode;
+                SnapToCurrentNodeIfPossible();
+                Debug.Log($"PlayerPawn recovered start node from node id guess: {currentNode.NodeId}");
+                return;
+            }
+
+            currentNode = allNodes
+                .Where(node => node != null)
+                .OrderBy(node => Vector3.Distance(transform.position, node.StandPoint.position))
+                .FirstOrDefault();
+
+            if (currentNode != null)
+            {
+                SnapToCurrentNodeIfPossible();
+                Debug.Log($"PlayerPawn recovered nearest node: {currentNode.NodeId}");
+            }
+        }
+
+        private void SnapToCurrentNodeIfPossible()
+        {
+            if (currentNode != null)
+            {
+                transform.position = currentNode.StandPoint.position;
+            }
         }
     }
 }

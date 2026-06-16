@@ -11,11 +11,13 @@ namespace Monopoly.Core
         [SerializeField] private DiceController playerDice;
         [SerializeField] private UIManager uiManager;
         [SerializeField] private PlayerData playerData;
+        [SerializeField] private int diceRollCost = 10;
         private bool waitingForDecision;
 
         public bool IsPlayerTurn { get; private set; }
         public int CurrentTurn { get; private set; }
         public PlayerData BoundPlayerData => playerData;
+        public int DiceRollCost => diceRollCost;
 
         public void Configure(PlayerPawn pawn, DiceController dice, UIManager manager, PlayerData data)
         {
@@ -42,12 +44,6 @@ namespace Monopoly.Core
             {
                 waitingForDecision = false;
                 EndPlayerTurn();
-                return;
-            }
-
-            if (IsPlayerTurn && Input.GetKeyDown(KeyCode.Space))
-            {
-                RollPlayerDice();
             }
         }
 
@@ -55,13 +51,31 @@ namespace Monopoly.Core
         {
             if (!IsPlayerTurn || playerDice == null || playerPawn == null)
             {
+                Debug.LogWarning(
+                    $"RollPlayerDice blocked. IsPlayerTurn={IsPlayerTurn}, Dice={(playerDice != null)}, Pawn={(playerPawn != null)}");
+                return;
+            }
+
+            if (playerDice.IsRolling)
+            {
+                Debug.Log("RollPlayerDice ignored: physical dice is already rolling.");
+                return;
+            }
+
+            if (playerData != null && !playerData.SpendMoney(diceRollCost))
+            {
+                uiManager?.ShowTransientMessage($"Not enough money to roll. Cost: {diceRollCost}");
                 return;
             }
 
             IsPlayerTurn = false;
+            playerDice.Roll(OnDiceRollFinished);
+        }
 
-            int steps = playerDice.Roll();
+        private void OnDiceRollFinished(int steps)
+        {
             playerData?.RecordDiceRoll(steps);
+            Debug.Log($"TurnManager rolling dice. Steps={steps}, Pawn={playerPawn.name}");
 
             if (uiManager != null)
             {

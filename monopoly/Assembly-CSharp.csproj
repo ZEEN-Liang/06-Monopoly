@@ -45,22 +45,27 @@
     <Analyzer Include="C:\Users\H\.vscode\extensions\visualstudiotoolsforunity.vstuc-1.2.2\Analyzers\Microsoft.Unity.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Shop\ShopUpgradeTier.cs" />
     <Compile Include="Assets\Scripts\Board\EventTile.cs" />
     <Compile Include="Assets\Scripts\Core\BoardManager.cs" />
     <Compile Include="Assets\Scripts\Board\RouteBranch.cs" />
     <Compile Include="Assets\Scripts\UI\UIManager.cs" />
     <Compile Include="Assets\Scripts\Player\DiceController.cs" />
     <Compile Include="Assets\Scripts\Core\MapStateManager.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerUpgradeSystem.cs" />
     <Compile Include="Assets\Scripts\Shop\ShopData.cs" />
     <Compile Include="Assets\Scripts\Customer\CustomerData.cs" />
     <Compile Include="Assets\Scripts\Event\EventData.cs" />
     <Compile Include="Assets\Scripts\Customer\CustomerDecisionHelper.cs" />
+    <Compile Include="Assets\Scripts\Shop\ShopUpgradeEffectType.cs" />
     <Compile Include="Assets\Scripts\Shop\ShopRebuildSystem.cs" />
     <Compile Include="Assets\Scripts\Board\PathNode.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerUpgradeOptionData.cs" />
     <Compile Include="Assets\Scripts\Event\EventChoiceData.cs" />
     <Compile Include="Assets\Scripts\Core\TurnManager.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerPawn.cs" />
     <Compile Include="Assets\Scripts\Board\UpgradeTile.cs" />
+    <Compile Include="Assets\Scripts\Shop\ShopUpgradeOptionData.cs" />
     <Compile Include="Assets\Scripts\Customer\CustomerFlowManager.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerData.cs" />
     <Compile Include="Assets\Scripts\Utils\GameEnums.cs" />
@@ -69,18 +74,14 @@
     <Compile Include="Assets\Scripts\Shop\ShopUpgradeSystem.cs" />
     <Compile Include="Assets\Scripts\Board\BoardTile.cs" />
     <Compile Include="Assets\Scripts\Event\EventManager.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerUpgradeEffectType.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerUpgradeTier.cs" />
     <Compile Include="Assets\Scripts\Core\GameManager.cs" />
     <Compile Include="Assets\Scripts\Customer\CustomerAgent.cs" />
     <Compile Include="Assets\Scripts\Shop\ShopSystem.cs" />
     <Compile Include="Assets\Scripts\Shop\ShopInstance.cs" />
     <Compile Include="Assets\Scripts\Core\DemoSceneBootstrap.cs" />
-    <Compile Include="Assets\Scripts\Shop\ShopUpgradeEffectType.cs" />
-    <Compile Include="Assets\Scripts\Shop\ShopUpgradeOptionData.cs" />
-    <Compile Include="Assets\Scripts\Shop\ShopUpgradeTier.cs" />
-    <Compile Include="Assets\Scripts\Player\PlayerUpgradeOptionData.cs" />
-    <Compile Include="Assets\Scripts\Player\PlayerUpgradeSystem.cs" />
-    <Compile Include="Assets\Scripts\Player\PlayerUpgradeEffectType.cs" />
-    <Compile Include="Assets\Scripts\Player\PlayerUpgradeTier.cs" />
+    <Compile Include="Assets\Scripts\Core\OrbitCameraController.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

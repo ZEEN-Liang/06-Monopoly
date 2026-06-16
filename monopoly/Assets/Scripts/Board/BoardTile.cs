@@ -14,6 +14,7 @@ namespace Monopoly.Board
         [Header("Debug Label")]
         [SerializeField] protected bool showDebugLabel = true;
         [SerializeField] protected Vector3 debugLabelOffset = new Vector3(0f, 1.2f, 0f);
+        [SerializeField] protected bool faceCameraAlways = true;
         [Header("Selection")]
         [SerializeField] protected Color selectionOutlineColor = new Color(1f, 0.9f, 0.2f, 1f);
         [SerializeField] protected float selectionOutlineThickness = 0.08f;
@@ -84,6 +85,11 @@ namespace Monopoly.Board
             {
                 UIManager.Instance.ShowTileInspectPanel(this);
             }
+        }
+
+        private void LateUpdate()
+        {
+            UpdateDebugLabelFacing();
         }
 
         private void EnsureSelectionOutline()
@@ -187,6 +193,81 @@ namespace Monopoly.Board
             }
 
             debugTextMesh.gameObject.SetActive(showDebugLabel && isSelected);
+        }
+
+        protected void UpdateDebugLabelFacing()
+        {
+            if (!faceCameraAlways || debugTextMesh == null || Camera.main == null)
+            {
+                return;
+            }
+
+            Transform labelTransform = debugTextMesh.transform;
+            Vector3 toCamera = labelTransform.position - Camera.main.transform.position;
+            if (toCamera.sqrMagnitude <= 0.0001f)
+            {
+                return;
+            }
+
+            labelTransform.rotation = Quaternion.LookRotation(toCamera.normalized, Vector3.up);
+        }
+    }
+
+    public class StartTile : BoardTile
+    {
+        [Header("Visual")]
+        [SerializeField] private Renderer tileRenderer;
+        [SerializeField] private Color startColor = new Color(0.95f, 0.9f, 0.35f);
+
+        private void Reset()
+        {
+            tileType = TileType.Start;
+        }
+
+        private void Start()
+        {
+            ApplyColor();
+        }
+
+        public void Configure(PathNode node = null)
+        {
+            if (node != null)
+            {
+                bindNode = node;
+            }
+
+            tileType = TileType.Start;
+            ApplyColor();
+            RefreshDebugLabel("Start");
+        }
+
+        public override void OnPlayerLanded(PlayerPawn player)
+        {
+        }
+
+        public override string GetInspectTitle()
+        {
+            return "Start Tile";
+        }
+
+        public override string GetInspectBody()
+        {
+            return "Player spawn tile";
+        }
+
+        private void ApplyColor()
+        {
+            if (tileRenderer == null)
+            {
+                tileRenderer = GetComponentInChildren<Renderer>();
+            }
+
+            if (tileRenderer != null)
+            {
+                tileRenderer.material.color = startColor;
+            }
+
+            RefreshDebugLabel("Start");
         }
     }
 }

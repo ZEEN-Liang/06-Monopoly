@@ -22,6 +22,9 @@ namespace Monopoly.Board
         public ShopInstance CurrentShop => currentShop;
         public bool IsOwned => currentShop != null && currentShop.IsOwned;
         public bool IsUnderConstruction => isUnderConstruction;
+        public ShopCategory GeneratedCategory => (currentShop != null ? currentShop.Data : originalShopData) != null
+            ? (currentShop != null ? currentShop.Data : originalShopData).category
+            : ShopCategory.Snack;
 
         private void Reset()
         {
@@ -37,6 +40,8 @@ namespace Monopoly.Board
         public void Configure(ShopData sourceShopData, PathNode node = null)
         {
             originalShopData = sourceShopData;
+            currentShop = null;
+            isUnderConstruction = false;
             if (node != null)
             {
                 bindNode = node;

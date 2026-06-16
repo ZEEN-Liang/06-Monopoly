@@ -27,10 +27,15 @@ namespace Monopoly.UI
         [SerializeField] private Text shopCountText;
         [SerializeField] private Text rentText;
         [SerializeField] private Text messageText;
+        [SerializeField] private Button rollDiceButton;
+        [SerializeField] private Text rollDiceButtonText;
         [SerializeField] private GameObject inspectPanel;
         [SerializeField] private Text inspectTitleText;
         [SerializeField] private Text inspectBodyText;
         [SerializeField] private Vector3 inspectWorldOffset = new Vector3(1.3f, 1.4f, 0f);
+        [SerializeField] private float inspectPanelGap = 24f;
+        [SerializeField] private float inspectScreenMargin = 16f;
+        [SerializeField] private float inspectFollowSmoothTime = 0.08f;
         [Header("Choice UI")]
         [SerializeField] private GameObject modalPanel;
         [SerializeField] private Text modalTitleText;
@@ -55,6 +60,8 @@ namespace Monopoly.UI
         private Action pendingChoiceTwoAction;
         private Action pendingChoiceThreeAction;
         private BoardTile selectedInspectTile;
+        private Vector3 inspectPanelVelocity;
+        private bool rollDiceButtonBound;
 
         public bool IsBlockingChoiceActive =>
             (modalPanel != null && modalPanel.activeSelf) ||
@@ -74,6 +81,8 @@ namespace Monopoly.UI
 
         private void Update()
         {
+            TryResolveRuntimeBindings();
+
             if (playerData == null && GameManager.Instance != null)
             {
                 // Keep polling lightly so manually assembled scenes can still pick up bindings later.
@@ -119,8 +128,8 @@ namespace Monopoly.UI
                 turnText.text = $"Turn: {turn}";
             }
 
-            SetMessage($"Turn {turn} start. Press Space to roll.");
-            Debug.Log($"Turn {turn} start. Press Space to roll.");
+            SetMessage($"Turn {turn} start. Click Dice to roll.");
+            Debug.Log($"Turn {turn} start. Click Dice to roll.");
         }
 
         public void ShowDiceResult(int value)
@@ -292,6 +301,11 @@ namespace Monopoly.UI
             Debug.Log(message);
         }
 
+        public void OnRollDiceButtonClicked()
+        {
+            HandleRollDiceClicked();
+        }
+
         public void ShowTileInspectPanel(BoardTile tile)
         {
             EnsureHud();
@@ -328,10 +342,14 @@ namespace Monopoly.UI
             {
                 inspectPanel.SetActive(false);
             }
+
+            inspectPanelVelocity = Vector3.zero;
         }
 
         private void RefreshAll()
         {
+            RefreshRollDiceButtonState();
+
             if (playerData == null)
             {
                 return;
@@ -367,6 +385,7 @@ namespace Monopoly.UI
             {
                 turnText.text = $"Turn: {turnManager.CurrentTurn}";
             }
+
         }
 
         private void EnsureHud()
@@ -377,6 +396,7 @@ namespace Monopoly.UI
                 EnsureChoicePanel();
                 EnsureTripleChoicePanel();
                 EnsureInspectPanel();
+                EnsureRollDiceButton();
                 return;
             }
 
@@ -411,6 +431,20 @@ namespace Monopoly.UI
             EnsureChoicePanel();
             EnsureTripleChoicePanel();
             EnsureInspectPanel();
+            EnsureRollDiceButton();
+        }
+
+        private void TryResolveRuntimeBindings()
+        {
+            if (turnManager == null)
+            {
+                turnManager = FindObjectOfType<TurnManager>();
+            }
+
+            if (playerData == null)
+            {
+                playerData = FindObjectOfType<PlayerData>();
+            }
         }
 
         private Text CreateText(Transform parent, string objectName, Vector2 anchoredPosition, int fontSize = 22)
@@ -500,7 +534,127 @@ namespace Monopoly.UI
                 return;
             }
 
-            panelRect.position = screenPosition;
+            Vector2 panelSize = panelRect.sizeDelta;
+            Rect tileRect = GetTileScreenRect(selectedInspectTile, screenPosition);
+            Vector3 targetPosition = FindBestInspectPanelPosition(tileRect, panelSize, panelRect.position);
+            panelRect.position = Vector3.SmoothDamp(
+                panelRect.position,
+                targetPosition,
+                ref inspectPanelVelocity,
+                inspectFollowSmoothTime);
+        }
+
+        private Vector3 FindBestInspectPanelPosition(Rect tileRect, Vector2 panelSize, Vector3 currentPosition)
+        {
+            Vector2[] candidates =
+            {
+                new Vector2(tileRect.xMax + inspectPanelGap, tileRect.center.y + panelSize.y * 0.5f),
+                new Vector2(tileRect.xMin - panelSize.x - inspectPanelGap, tileRect.center.y + panelSize.y * 0.5f),
+                new Vector2(tileRect.center.x - panelSize.x * 0.5f, tileRect.yMax + panelSize.y + inspectPanelGap),
+                new Vector2(tileRect.center.x - panelSize.x * 0.5f, tileRect.yMin - inspectPanelGap)
+            };
+
+            Vector3 bestPosition = ClampInspectPanelPosition(candidates[0], panelSize);
+            float bestScore = float.MaxValue;
+
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                Vector3 candidatePosition = ClampInspectPanelPosition(candidates[i], panelSize);
+                Rect candidateRect = new Rect(
+                    candidatePosition.x,
+                    candidatePosition.y - panelSize.y,
+                    panelSize.x,
+                    panelSize.y);
+
+                float overlapArea = CalculateRectOverlapArea(tileRect, candidateRect);
+                float distancePenalty = Vector2.Distance(
+                    new Vector2(candidatePosition.x, candidatePosition.y),
+                    new Vector2(currentPosition.x, currentPosition.y)) * 0.05f;
+
+                float score = overlapArea + distancePenalty;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    bestPosition = candidatePosition;
+                }
+            }
+
+            return bestPosition;
+        }
+
+        private Rect GetTileScreenRect(BoardTile tile, Vector3 fallbackScreenPosition)
+        {
+            if (tile == null || Camera.main == null)
+            {
+                return new Rect(fallbackScreenPosition.x - 40f, fallbackScreenPosition.y - 20f, 80f, 40f);
+            }
+
+            Renderer tileRenderer = tile.GetComponentInChildren<Renderer>();
+            if (tileRenderer == null)
+            {
+                return new Rect(fallbackScreenPosition.x - 40f, fallbackScreenPosition.y - 20f, 80f, 40f);
+            }
+
+            Bounds bounds = tileRenderer.bounds;
+            Vector3[] corners =
+            {
+                new Vector3(bounds.min.x, bounds.min.y, bounds.min.z),
+                new Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
+                new Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
+                new Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
+                new Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
+                new Vector3(bounds.max.x, bounds.min.y, bounds.max.z),
+                new Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
+                new Vector3(bounds.max.x, bounds.max.y, bounds.max.z)
+            };
+
+            float minX = float.MaxValue;
+            float maxX = float.MinValue;
+            float minY = float.MaxValue;
+            float maxY = float.MinValue;
+
+            for (int i = 0; i < corners.Length; i++)
+            {
+                Vector3 screenCorner = Camera.main.WorldToScreenPoint(corners[i]);
+                if (screenCorner.z <= 0f)
+                {
+                    continue;
+                }
+
+                minX = Mathf.Min(minX, screenCorner.x);
+                maxX = Mathf.Max(maxX, screenCorner.x);
+                minY = Mathf.Min(minY, screenCorner.y);
+                maxY = Mathf.Max(maxY, screenCorner.y);
+            }
+
+            if (minX == float.MaxValue)
+            {
+                return new Rect(fallbackScreenPosition.x - 40f, fallbackScreenPosition.y - 20f, 80f, 40f);
+            }
+
+            return Rect.MinMaxRect(minX, minY, maxX, maxY);
+        }
+
+        private Vector3 ClampInspectPanelPosition(Vector2 topLeftPosition, Vector2 panelSize)
+        {
+            float x = Mathf.Clamp(
+                topLeftPosition.x,
+                inspectScreenMargin,
+                Screen.width - panelSize.x - inspectScreenMargin);
+
+            float y = Mathf.Clamp(
+                topLeftPosition.y,
+                panelSize.y + inspectScreenMargin,
+                Screen.height - inspectScreenMargin);
+
+            return new Vector3(x, y, 0f);
+        }
+
+        private float CalculateRectOverlapArea(Rect a, Rect b)
+        {
+            float overlapWidth = Mathf.Max(0f, Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin));
+            float overlapHeight = Mathf.Max(0f, Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin));
+            return overlapWidth * overlapHeight;
         }
 
         private string BuildUpgradeChoiceText(ShopUpgradeOptionData option)
@@ -582,6 +736,54 @@ namespace Monopoly.UI
             cancelButton.onClick.AddListener(HandleCancelClicked);
 
             modalPanel.SetActive(false);
+        }
+
+        private void EnsureRollDiceButton()
+        {
+            if (rollDiceButton == null)
+            {
+                Transform parent = hudCanvas != null ? hudCanvas.transform : transform;
+                rollDiceButton = CreateAnchoredButton(
+                    parent,
+                    "RollDiceButton",
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 0f),
+                    new Vector2(0f, 0f),
+                    new Vector2(20f, 20f),
+                    new Vector2(180f, 60f));
+            }
+
+            RectTransform buttonRect = rollDiceButton.GetComponent<RectTransform>();
+            if (buttonRect != null)
+            {
+                buttonRect.anchorMin = new Vector2(0f, 0f);
+                buttonRect.anchorMax = new Vector2(0f, 0f);
+                buttonRect.pivot = new Vector2(0f, 0f);
+                buttonRect.anchoredPosition = new Vector2(20f, 20f);
+                buttonRect.sizeDelta = new Vector2(180f, 60f);
+            }
+
+            rollDiceButtonText = rollDiceButton.GetComponentInChildren<Text>();
+            if (rollDiceButtonText != null)
+            {
+                rollDiceButtonText.text = "Roll Dice";
+                rollDiceButtonText.raycastTarget = false;
+            }
+
+            Image buttonImage = rollDiceButton.GetComponent<Image>();
+            if (buttonImage == null)
+            {
+                buttonImage = rollDiceButton.gameObject.AddComponent<Image>();
+            }
+
+            if (!rollDiceButtonBound)
+            {
+                rollDiceButton.onClick.RemoveListener(HandleRollDiceClicked);
+                rollDiceButton.onClick.AddListener(HandleRollDiceClicked);
+                rollDiceButtonBound = true;
+            }
+
+            RefreshRollDiceButtonState();
         }
 
         private void EnsureInspectPanel()
@@ -672,13 +874,32 @@ namespace Monopoly.UI
 
         private Button CreateButton(Transform parent, string objectName, Vector2 anchoredPosition, Vector2 size)
         {
+            return CreateAnchoredButton(
+                parent,
+                objectName,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                anchoredPosition,
+                size);
+        }
+
+        private Button CreateAnchoredButton(
+            Transform parent,
+            string objectName,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 pivot,
+            Vector2 anchoredPosition,
+            Vector2 size)
+        {
             GameObject buttonObject = new GameObject(objectName);
             buttonObject.transform.SetParent(parent, false);
 
             RectTransform rectTransform = buttonObject.AddComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0f, 1f);
-            rectTransform.anchorMax = new Vector2(0f, 1f);
-            rectTransform.pivot = new Vector2(0f, 1f);
+            rectTransform.anchorMin = anchorMin;
+            rectTransform.anchorMax = anchorMax;
+            rectTransform.pivot = pivot;
             rectTransform.anchoredPosition = anchoredPosition;
             rectTransform.sizeDelta = size;
 
@@ -695,6 +916,7 @@ namespace Monopoly.UI
             labelRect.anchoredPosition = Vector2.zero;
             labelRect.sizeDelta = Vector2.zero;
             label.alignment = TextAnchor.MiddleCenter;
+            label.raycastTarget = false;
 
             return button;
         }
@@ -777,6 +999,26 @@ namespace Monopoly.UI
             CloseChoiceModal();
         }
 
+        private void HandleRollDiceClicked()
+        {
+            Debug.Log("Roll dice button clicked.");
+
+            if (turnManager == null)
+            {
+                Debug.LogWarning("Roll dice failed: TurnManager is not bound.");
+                return;
+            }
+
+            if (IsBlockingChoiceActive)
+            {
+                Debug.Log("Roll dice blocked by active modal.");
+                return;
+            }
+
+            turnManager.RollPlayerDice();
+            RefreshRollDiceButtonState();
+        }
+
         private void CloseChoiceModal()
         {
             pendingConfirmAction = null;
@@ -796,6 +1038,42 @@ namespace Monopoly.UI
             }
 
             Time.timeScale = 1f;
+            RefreshRollDiceButtonState();
+        }
+
+        private void RefreshRollDiceButtonState()
+        {
+            if (rollDiceButton == null)
+            {
+                return;
+            }
+
+            TryResolveRuntimeBindings();
+
+            bool interactable = !IsBlockingChoiceActive;
+            if (turnManager != null)
+            {
+                interactable = interactable && turnManager.IsPlayerTurn;
+            }
+            if (interactable && playerData != null && turnManager != null)
+            {
+                interactable = playerData.CanAfford(turnManager.DiceRollCost);
+            }
+
+            rollDiceButton.interactable = interactable;
+
+            Image image = rollDiceButton.GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = interactable
+                    ? new Color(0.95f, 0.72f, 0.38f, 1f)
+                    : new Color(0.72f, 0.68f, 0.6f, 0.8f);
+            }
+
+            if (rollDiceButtonText != null && turnManager != null)
+            {
+                rollDiceButtonText.text = $"Roll Dice\n-${turnManager.DiceRollCost}";
+            }
         }
     }
 }

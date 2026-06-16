@@ -10,6 +10,8 @@ namespace Monopoly.Core
         [SerializeField] private List<RouteBranch> routeBranches = new List<RouteBranch>();
         [SerializeField] private List<BoardTile> allTiles = new List<BoardTile>();
 
+        public PathNode StartNode => mainPath != null && mainPath.Count > 0 ? mainPath[0] : null;
+
         public PathNode GetNextNode(PathNode currentNode, int routeIndex = 0)
         {
             if (currentNode == null)
@@ -17,7 +19,20 @@ namespace Monopoly.Core
                 return mainPath.Count > 0 ? mainPath[0] : null;
             }
 
-            return currentNode.GetNextNode(routeIndex);
+            PathNode nextNode = currentNode.GetNextNode(routeIndex);
+            if (nextNode != null)
+            {
+                return nextNode;
+            }
+
+            int currentIndex = mainPath.IndexOf(currentNode);
+            if (currentIndex >= 0 && mainPath.Count > 0)
+            {
+                int nextIndex = (currentIndex + 1) % mainPath.Count;
+                return mainPath[nextIndex];
+            }
+
+            return null;
         }
 
         public BoardTile GetTileByNode(PathNode node)

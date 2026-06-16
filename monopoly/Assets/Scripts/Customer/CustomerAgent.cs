@@ -20,9 +20,13 @@ namespace Monopoly.Customer
         [SerializeField] private Color incomeTextColor = new Color(0.15f, 0.9f, 0.35f);
         [SerializeField] private float incomeFloatDuration = 0.9f;
         [SerializeField] private float incomeFloatDistance = 0.8f;
+        [Header("Stay Presentation")]
+        [SerializeField] private float shopEnterVisibleDuration = 0.2f;
+        [SerializeField] private float shopExitVisibleDuration = 0.2f;
 
         private int completedLoops;
         private bool isRunning;
+        private Renderer[] cachedRenderers;
 
         public CustomerData Data => data;
 
@@ -33,6 +37,8 @@ namespace Monopoly.Customer
             data = customerData;
             currentNode = startNode;
             this.startNode = startNode;
+            CacheRenderers();
+            SetCustomerVisible(true);
 
             if (currentNode != null)
             {
@@ -57,7 +63,8 @@ namespace Monopoly.Customer
                 int steps = decisionHelper != null ? decisionHelper.RollMoveStep(data) : 1;
                 yield return MoveStepsRoutine(steps);
                 float stopDuration = ResolveStopDurationOnCurrentTile();
-                yield return new WaitForSeconds(Mathf.Max(minimumIdleInterval, moveInterval + stopDuration));
+                yield return HandleStopPresentation(stopDuration);
+                yield return new WaitForSeconds(Mathf.Max(minimumIdleInterval, moveInterval));
             }
 
             LeaveMap();
@@ -98,6 +105,44 @@ namespace Monopoly.Customer
             }
 
             return Mathf.Max(0f, currentNode.Tile.GetCustomerStopDuration(this));
+        }
+
+        private IEnumerator HandleStopPresentation(float stopDuration)
+        {
+            if (stopDuration <= 0f)
+            {
+                yield break;
+            }
+
+            bool shouldHideDuringStay = currentNode != null && currentNode.Tile is ShopTile;
+            if (!shouldHideDuringStay)
+            {
+                yield return new WaitForSeconds(stopDuration);
+                yield break;
+            }
+
+            float enterDuration = Mathf.Min(shopEnterVisibleDuration, stopDuration);
+            if (enterDuration > 0f)
+            {
+                SetCustomerVisible(true);
+                yield return new WaitForSeconds(enterDuration);
+            }
+
+            float remaining = Mathf.Max(0f, stopDuration - enterDuration);
+            float exitDuration = Mathf.Min(shopExitVisibleDuration, remaining);
+            float hiddenDuration = Mathf.Max(0f, remaining - exitDuration);
+
+            if (hiddenDuration > 0f)
+            {
+                SetCustomerVisible(false);
+                yield return new WaitForSeconds(hiddenDuration);
+            }
+
+            SetCustomerVisible(true);
+            if (exitDuration > 0f)
+            {
+                yield return new WaitForSeconds(exitDuration);
+            }
         }
 
         private IEnumerator MoveToPosition(Vector3 targetPosition)
@@ -161,6 +206,34 @@ namespace Monopoly.Customer
             }
 
             Destroy(popupObject);
+        }
+
+        private void CacheRenderers()
+        {
+            if (cachedRenderers == null || cachedRenderers.Length == 0)
+            {
+                cachedRenderers = GetComponentsInChildren<Renderer>(true);
+            }
+        }
+
+        private void SetCustomerVisible(bool visible)
+        {
+            CacheRenderers();
+            if (cachedRenderers == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < cachedRenderers.Length; i++)
+            {
+                Renderer renderer = cachedRenderers[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                renderer.enabled = visible;
+            }
         }
     }
 }
