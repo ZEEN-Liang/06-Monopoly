@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d6fc900228e0ad4faac74cfd1ba323a, type: 3}
+  m_Name: SD_Desert1
+  m_EditorClassIdentifier: 
+  shopId: Desert1
+  shopName: desert1
+  category: 1
+  role: 0
+  acquireCost: 100
+  rebuildCost: 150
+  baseIncome: 30
+  baseUpgradeCost: 50
+  growthProfile: {fileID: 11400000, guid: 4e1f2621f729ca546bc085d79d41e0cf, type: 2}
+  shopModelPrefab: {fileID: 2312417423050157954, guid: bca385975a9171b49906192d5d89da85, type: 3}
+  shopModelScale: {x: 1, y: 1, z: 1}
+  shopModelLocalOffset: {x: 0, y: 0, z: 0}
+  baseAttraction: 0
+  customerStopFlatModifier: 0.8
+  customerStopMultiplier: 1

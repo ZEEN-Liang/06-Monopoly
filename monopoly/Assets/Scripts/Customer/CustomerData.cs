@@ -12,6 +12,9 @@ namespace Monopoly.Customer
         public int minMoveStep = 1;
         public int maxMoveStep = 3;
         public int baseSpend = 20;
+        [Header("Attraction")]
+        public float attractionSensitivity = 1f;
+        public float preferredAttractionBonus = 0.35f;
         [Header("Stay")]
         public float baseStopDuration = 2.2f;
         public float stopDurationVariance = 0.35f;

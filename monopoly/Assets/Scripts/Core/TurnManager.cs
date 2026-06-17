@@ -62,7 +62,7 @@ namespace Monopoly.Core
                 return;
             }
 
-            if (playerData != null && !playerData.SpendMoney(diceRollCost))
+            if (playerData != null && !playerData.TrySpendMoneyWithDebt(diceRollCost))
             {
                 uiManager?.ShowTransientMessage($"Not enough money to roll. Cost: {diceRollCost}");
                 return;

@@ -74,7 +74,6 @@ namespace Monopoly.Player
                     playerData.AddGlobalAcquireDiscount(option.primaryValue);
                     break;
                 case PlayerUpgradeEffectType.GlobalPreferredIncomeBonus:
-                    playerData.AddGlobalPreferredIncomeBonus(option.primaryValue);
                     break;
             }
         }
@@ -123,7 +122,6 @@ namespace Monopoly.Player
             globalUpgradePool.Add(CreateFallbackOption("street_promo", "Street Promotion", "+10 satisfaction", PlayerUpgradeTier.Common, PlayerUpgradeEffectType.SatisfactionGain, 10, 0, 0, 999, 14, 0));
             globalUpgradePool.Add(CreateFallbackOption("service_training", "Service Training", "+5 income for all owned shops", PlayerUpgradeTier.Uncommon, PlayerUpgradeEffectType.GlobalShopIncomeBonus, 5, 0, 2, 999, 10, 1));
             globalUpgradePool.Add(CreateFallbackOption("franchise_coupon", "Franchise Coupon", "Future shop purchases cost 20 less", PlayerUpgradeTier.Rare, PlayerUpgradeEffectType.GlobalAcquireDiscount, 20, 0, 5, 999, 7, 1));
-            globalUpgradePool.Add(CreateFallbackOption("taste_festival", "Taste Festival", "+8 preferred-customer income globally", PlayerUpgradeTier.Epic, PlayerUpgradeEffectType.GlobalPreferredIncomeBonus, 8, 0, 8, 999, 4, 1));
         }
 
         private PlayerUpgradeOptionData CreateFallbackOption(

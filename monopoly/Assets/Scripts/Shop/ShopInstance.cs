@@ -13,8 +13,9 @@ namespace Monopoly.Shop
         public bool IsOwned;
         public ShopBranchType CurrentBranch;
         public int FlatIncomeBonus;
-        public int PreferredIncomeBonus;
         public int UpgradeDiscount;
+        public float AttractionFlatBonus;
+        public float AttractionMultiplierBonus;
         public float CustomerStopFlatBonus;
         public float CustomerStopMultiplierBonus;
 
@@ -22,14 +23,29 @@ namespace Monopoly.Shop
         {
             Data = data;
             Owner = owner;
-            Level = 1;
+            Level = data != null && data.growthProfile != null
+                ? UnityEngine.Mathf.Max(1, data.growthProfile.ownedStartingLevel)
+                : 1;
             IsOwned = true;
             CurrentBranch = ShopBranchType.Default;
             FlatIncomeBonus = 0;
-            PreferredIncomeBonus = 10;
             UpgradeDiscount = 0;
+            AttractionFlatBonus = 0f;
+            AttractionMultiplierBonus = 0f;
             CustomerStopFlatBonus = 0f;
             CustomerStopMultiplierBonus = 0f;
+        }
+
+        public void ApplyInheritedMarketState(
+            int inheritedLevel,
+            int inheritedIncomeBonus,
+            float inheritedAttractionBonus,
+            float inheritedStopBonus)
+        {
+            Level = UnityEngine.Mathf.Max(1, inheritedLevel);
+            FlatIncomeBonus += inheritedIncomeBonus;
+            AttractionFlatBonus += inheritedAttractionBonus;
+            CustomerStopFlatBonus += inheritedStopBonus;
         }
 
         public void Upgrade()
@@ -53,7 +69,7 @@ namespace Monopoly.Shop
                     FlatIncomeBonus += 15;
                     break;
                 case ShopBranchType.Control:
-                    PreferredIncomeBonus += 15;
+                    AttractionFlatBonus += 6f;
                     break;
                 case ShopBranchType.Support:
                     FlatIncomeBonus += 5;
@@ -78,7 +94,7 @@ namespace Monopoly.Shop
                     FlatIncomeBonus += option.primaryValue;
                     break;
                 case ShopUpgradeEffectType.PreferredIncomeBoost:
-                    PreferredIncomeBonus += option.primaryValue;
+                    AttractionFlatBonus += option.primaryValue;
                     break;
                 case ShopUpgradeEffectType.UpgradeDiscountBoost:
                     UpgradeDiscount += option.primaryValue;
@@ -97,25 +113,26 @@ namespace Monopoly.Shop
         public void ReplaceData(ShopData newData)
         {
             Data = newData;
-            Level = 1;
+            Level = newData != null && newData.growthProfile != null
+                ? UnityEngine.Mathf.Max(1, newData.growthProfile.ownedStartingLevel)
+                : 1;
             CurrentBranch = ShopBranchType.Default;
             FlatIncomeBonus = 0;
-            PreferredIncomeBonus = 10;
             UpgradeDiscount = 0;
+            AttractionFlatBonus = 0f;
+            AttractionMultiplierBonus = 0f;
             CustomerStopFlatBonus = 0f;
             CustomerStopMultiplierBonus = 0f;
         }
 
         public int CalculateIncome(CustomerData customerData)
         {
-            int income = Data != null ? Data.baseIncome : 0;
-            income += (Level - 1) * 10;
+            int income = Data != null ? Data.baseCustomerProfit : 0;
+            int incomePerLevel = Data != null && Data.growthProfile != null
+                ? Data.growthProfile.ownedCustomerProfitGrowthPerLevel
+                : 10;
+            income += (Level - 1) * incomePerLevel;
             income += FlatIncomeBonus;
-
-            if (customerData != null && Data != null && customerData.preferredCategories.Contains(Data.category))
-            {
-                income += PreferredIncomeBonus;
-            }
 
             return income;
         }
@@ -131,12 +148,33 @@ namespace Monopoly.Shop
                 baseDuration += UnityEngine.Random.Range(-variance, variance);
             }
 
-            float dataFlatModifier = Data != null ? Data.customerStopFlatModifier : 0f;
-            float dataMultiplier = Data != null ? Data.customerStopMultiplier : 1f;
+            float shopBaseDuration = Data != null ? Data.baseCustomerStayDuration : 0.8f;
+            float shopReduction = Data != null && Data.growthProfile != null
+                ? UnityEngine.Mathf.Max(0f, Level - 1) * Data.growthProfile.ownedStayDurationReductionPerLevel
+                : 0f;
+            float dataMultiplier = Data != null ? Data.customerStayDurationMultiplier : 1f;
             float runtimeMultiplier = 1f + CustomerStopMultiplierBonus;
 
-            float duration = (baseDuration + dataFlatModifier + CustomerStopFlatBonus) * dataMultiplier * runtimeMultiplier;
+            float duration = (baseDuration + shopBaseDuration - shopReduction + CustomerStopFlatBonus) * dataMultiplier * runtimeMultiplier;
             return UnityEngine.Mathf.Max(minDuration, duration);
+        }
+
+        public float CalculateAttractionScore(CustomerData customerData)
+        {
+            float attraction = Data != null
+                ? Data.baseAttractionRate + UnityEngine.Mathf.Max(0, Level - 1) * GetOwnedAttractionGrowthPerLevel()
+                : 0f;
+            attraction += AttractionFlatBonus;
+            attraction *= 1f + AttractionMultiplierBonus;
+
+            return UnityEngine.Mathf.Max(0f, attraction);
+        }
+
+        private float GetOwnedAttractionGrowthPerLevel()
+        {
+            return Data != null && Data.growthProfile != null
+                ? Data.growthProfile.ownedAttractionGrowthPerLevel
+                : 0.15f;
         }
     }
 }

@@ -15,6 +15,14 @@ namespace Monopoly.Board
         [SerializeField] protected bool showDebugLabel = true;
         [SerializeField] protected Vector3 debugLabelOffset = new Vector3(0f, 1.2f, 0f);
         [SerializeField] protected bool faceCameraAlways = true;
+        [Header("Visual Override")]
+        [SerializeField] protected Renderer placeholderRenderer;
+        [SerializeField] protected Transform modelAnchor;
+        [SerializeField] protected GameObject tileModelPrefab;
+        [SerializeField] protected bool hidePlaceholderWhenModelLoaded = true;
+        [SerializeField] protected Vector3 tileModelLocalPosition = Vector3.zero;
+        [SerializeField] protected Vector3 tileModelLocalEulerAngles = Vector3.zero;
+        [SerializeField] protected Vector3 tileModelLocalScale = Vector3.one;
         [Header("Selection")]
         [SerializeField] protected Color selectionOutlineColor = new Color(1f, 0.9f, 0.2f, 1f);
         [SerializeField] protected float selectionOutlineThickness = 0.08f;
@@ -23,6 +31,7 @@ namespace Monopoly.Board
 
         private TextMesh debugTextMesh;
         private GameObject selectionOutlineRoot;
+        private GameObject spawnedTileModelInstance;
         private bool isSelected;
 
         public string TileId => tileId;
@@ -34,6 +43,7 @@ namespace Monopoly.Board
             tileId = id;
             tileType = type;
             bindNode = node;
+            RefreshTileVisualOverride();
             RefreshDebugLabel();
             UpdateDebugLabelVisibility();
         }
@@ -92,6 +102,85 @@ namespace Monopoly.Board
             UpdateDebugLabelFacing();
         }
 
+        protected void RefreshTileVisualOverride()
+        {
+            EnsureVisualReferences();
+
+            if (spawnedTileModelInstance != null)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(spawnedTileModelInstance);
+                }
+                else
+                {
+                    DestroyImmediate(spawnedTileModelInstance);
+                }
+            }
+
+            spawnedTileModelInstance = null;
+            bool hasModelPrefab = tileModelPrefab != null;
+
+            if (hasModelPrefab)
+            {
+                Transform anchor = modelAnchor != null ? modelAnchor : transform;
+                spawnedTileModelInstance = Instantiate(tileModelPrefab, anchor);
+                spawnedTileModelInstance.name = "TileModel";
+                Transform modelTransform = spawnedTileModelInstance.transform;
+                Transform prefabTransform = tileModelPrefab.transform;
+                modelTransform.localPosition = prefabTransform.localPosition + tileModelLocalPosition;
+                modelTransform.localRotation = prefabTransform.localRotation * Quaternion.Euler(tileModelLocalEulerAngles);
+                modelTransform.localScale = new Vector3(
+                    prefabTransform.localScale.x * tileModelLocalScale.x,
+                    prefabTransform.localScale.y * tileModelLocalScale.y,
+                    prefabTransform.localScale.z * tileModelLocalScale.z);
+            }
+
+            SetPlaceholderVisible(!hasModelPrefab || !hidePlaceholderWhenModelLoaded);
+        }
+
+        protected Renderer GetPlaceholderRenderer()
+        {
+            EnsureVisualReferences();
+            return placeholderRenderer;
+        }
+
+        private void EnsureVisualReferences()
+        {
+            if (placeholderRenderer == null)
+            {
+                Transform tileVisual = transform.Find("TileVisual");
+                if (tileVisual != null)
+                {
+                    placeholderRenderer = tileVisual.GetComponent<Renderer>();
+                }
+
+                if (placeholderRenderer == null)
+                {
+                    placeholderRenderer = GetComponentInChildren<Renderer>();
+                }
+            }
+
+            if (modelAnchor == null)
+            {
+                Transform existingAnchor = transform.Find("ModelAnchor");
+                if (existingAnchor != null)
+                {
+                    modelAnchor = existingAnchor;
+                }
+            }
+        }
+
+        private void SetPlaceholderVisible(bool visible)
+        {
+            if (placeholderRenderer == null)
+            {
+                return;
+            }
+
+            placeholderRenderer.enabled = visible;
+        }
+
         private void EnsureSelectionOutline()
         {
             if (selectionOutlineRoot != null)
@@ -99,7 +188,7 @@ namespace Monopoly.Board
                 return;
             }
 
-            Renderer targetRenderer = GetComponentInChildren<Renderer>();
+            Renderer targetRenderer = GetSelectionRenderer();
             if (targetRenderer == null)
             {
                 return;
@@ -124,6 +213,27 @@ namespace Monopoly.Board
             CreateOutlineSegment("Bottom", new Vector3(0f, 0f, -outerDepth * 0.5f), new Vector3(outerWidth, height, thickness));
             CreateOutlineSegment("Left", new Vector3(-outerWidth * 0.5f, 0f, 0f), new Vector3(thickness, height, outerDepth));
             CreateOutlineSegment("Right", new Vector3(outerWidth * 0.5f, 0f, 0f), new Vector3(thickness, height, outerDepth));
+        }
+
+        private Renderer GetSelectionRenderer()
+        {
+            Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] == null)
+                {
+                    continue;
+                }
+
+                if (!renderers[i].enabled)
+                {
+                    continue;
+                }
+
+                return renderers[i];
+            }
+
+            return null;
         }
 
         private void CreateOutlineSegment(string segmentName, Vector3 localPosition, Vector3 localScale)
@@ -259,7 +369,7 @@ namespace Monopoly.Board
         {
             if (tileRenderer == null)
             {
-                tileRenderer = GetComponentInChildren<Renderer>();
+                tileRenderer = GetPlaceholderRenderer();
             }
 
             if (tileRenderer != null)

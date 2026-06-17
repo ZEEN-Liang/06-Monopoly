@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d6fc900228e0ad4faac74cfd1ba323a, type: 3}
+  m_Name: SD_Berger
+  m_EditorClassIdentifier: 
+  shopId: Burger
+  shopName: burger
+  category: 3
+  role: 0
+  baseAcquireCost: 1500
+  rebuildCost: 150
+  baseUpgradeCost: 1500
+  baseRent: 200
+  baseCustomerProfit: 50
+  growthProfile: {fileID: 0}
+  shopModelPrefab: {fileID: 2581566980914296455, guid: f4c4616ecce9282458aaf416e352682d, type: 3}
+  shopModelScale: {x: 1, y: 1, z: 1}
+  shopModelLocalOffset: {x: 0, y: 0, z: 0}
+  baseAttractionRate: 10
+  baseCustomerStayDuration: 0.5
+  customerStayDurationMultiplier: 1

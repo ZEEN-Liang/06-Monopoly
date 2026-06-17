@@ -7,6 +7,8 @@ namespace Monopoly.Customer
 {
     public class CustomerFlowManager : MonoBehaviour
     {
+        [Header("Configuration")]
+        [SerializeField] private bool preferInspectorConfiguration = true;
         [SerializeField] private CustomerAgent customerPrefab;
         [SerializeField] private CustomerDecisionHelper decisionHelper;
         [SerializeField] private BoardManager boardManager;
@@ -57,12 +59,36 @@ namespace Monopoly.Customer
         public void SpawnCustomer()
         {
             CustomerData customerData = customerPool[Random.Range(0, customerPool.Count)];
+            SpawnCustomer(customerData, false, null);
+        }
+
+        public CustomerAgent SpawnEvaluationCustomer(CustomerData customerData, System.Action<CustomerAgent> onCompleted)
+        {
+            return SpawnCustomer(customerData, true, onCompleted);
+        }
+
+        private CustomerAgent SpawnCustomer(CustomerData customerData, bool evaluationMode, System.Action<CustomerAgent> onCompleted)
+        {
+            if (spawnNode == null)
+            {
+                return null;
+            }
+
+            CustomerData resolvedData = customerData != null
+                ? customerData
+                : (customerPool != null && customerPool.Count > 0 ? customerPool[Random.Range(0, customerPool.Count)] : null);
+
             CustomerAgent agent = customerPrefab != null
                 ? Instantiate(customerPrefab, spawnNode.StandPoint.position, Quaternion.identity)
                 : CreateRuntimeCustomerAgent();
-            agent.Initialize(boardManager, decisionHelper, customerData, spawnNode);
+            agent.Initialize(boardManager, decisionHelper, resolvedData, spawnNode);
+            if (evaluationMode)
+            {
+                agent.ConfigureEvaluationRun(onCompleted);
+            }
             agent.StartCustomerLife();
             activeCustomers.Add(agent);
+            return agent;
         }
 
         public void Configure(
@@ -73,12 +99,35 @@ namespace Monopoly.Customer
             float interval,
             int maxCount)
         {
-            decisionHelper = helper;
-            boardManager = manager;
-            spawnNode = startNode;
-            customerPool = customers ?? new List<CustomerData>();
-            spawnInterval = interval;
-            maxCustomers = maxCount;
+            if (!preferInspectorConfiguration || decisionHelper == null)
+            {
+                decisionHelper = helper;
+            }
+
+            if (!preferInspectorConfiguration || boardManager == null)
+            {
+                boardManager = manager;
+            }
+
+            if (!preferInspectorConfiguration || spawnNode == null)
+            {
+                spawnNode = startNode;
+            }
+
+            if (!preferInspectorConfiguration || customerPool == null || customerPool.Count == 0)
+            {
+                customerPool = customers ?? new List<CustomerData>();
+            }
+
+            if (!preferInspectorConfiguration || spawnInterval <= 0f)
+            {
+                spawnInterval = interval;
+            }
+
+            if (!preferInspectorConfiguration || maxCustomers <= 0)
+            {
+                maxCustomers = maxCount;
+            }
         }
 
         private CustomerAgent CreateRuntimeCustomerAgent()

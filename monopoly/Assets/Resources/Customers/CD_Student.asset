@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91007c30ab3384f4facf88e054fb0312, type: 3}
+  m_Name: CD_Student
+  m_EditorClassIdentifier: 
+  customerName: Student
+  customerType: 0
+  minMoveStep: 1
+  maxMoveStep: 2
+  baseSpend: 16
+  attractionSensitivity: 1.2
+  preferredAttractionBonus: 0.55
+  baseStopDuration: 2
+  stopDurationVariance: 0.35
+  minStopDuration: 0.8
+  preferredCategories:
+  - 3
+  - 0
+  - 1

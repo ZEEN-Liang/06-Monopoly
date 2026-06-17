@@ -14,8 +14,8 @@ namespace Monopoly.Shop
             }
 
             ShopData targetData = selectedData != null ? selectedData : shopTile.OriginalShopData;
-            int finalCost = targetData != null ? Mathf.Max(0, targetData.acquireCost - playerData.GlobalAcquireDiscount) : 0;
-            if (targetData == null || !playerData.SpendMoney(finalCost))
+            int finalCost = targetData != null ? Mathf.Max(0, shopTile.GetCurrentAcquireCost() - playerData.GlobalAcquireDiscount) : 0;
+            if (targetData == null || !playerData.TrySpendMoneyWithDebt(finalCost))
             {
                 return false;
             }

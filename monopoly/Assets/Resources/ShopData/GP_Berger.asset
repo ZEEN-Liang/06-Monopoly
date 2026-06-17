@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 574a22a7ee780f649a745dd3edac1394, type: 3}
+  m_Name: GP_Berger
+  m_EditorClassIdentifier: 
+  ownedStartingLevel: 0
+  ownedRentGrowthPerLevel: 50
+  ownedCustomerProfitGrowthPerLevel: 10
+  ownedAttractionGrowthPerLevel: 4
+  ownedStayDurationReductionPerLevel: 5
+  ownedUpgradeCostStepPerLevel: 500
+  wildStartingLevel: 0
+  wildMaxLevel: 5
+  baseCustomersNeededForAutoUpgrade: 5
+  extraCustomersNeededPerLevel: 1
+  wildIncomeBonusPerLevel: 8
+  wildAcquireCostBonusPerLevel: 40
+  wildAttractionBonusPerLevel: 0.25
+  wildStopDurationBonusPerLevel: 0.15

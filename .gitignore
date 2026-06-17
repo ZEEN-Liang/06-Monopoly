@@ -1,0 +1,28 @@
+# Unity generated folders
+monopoly/[Ll]ibrary/
+monopoly/[Tt]emp/
+monopoly/[Ll]ogs/
+monopoly/[Oo]bj/
+monopoly/[Bb]uild/
+monopoly/[Bb]uilds/
+monopoly/[Uu]ser[Ss]ettings/
+
+# IDE files
+monopoly/.vs/
+monopoly/.vscode/
+monopoly/*.csproj
+monopoly/*.sln
+
+# Large art source folders under Resources
+monopoly/Assets/Resources/**/model/
+monopoly/Assets/Resources/**/material/
+monopoly/Assets/Resources/**/texture/
+monopoly/Assets/Resources/**/models/
+monopoly/Assets/Resources/**/materials/
+monopoly/Assets/Resources/**/textures/
+monopoly/Assets/Resources/**/Model/
+monopoly/Assets/Resources/**/Material/
+monopoly/Assets/Resources/**/Texture/
+monopoly/Assets/Resources/**/Models/
+monopoly/Assets/Resources/**/Materials/
+monopoly/Assets/Resources/**/Textures/

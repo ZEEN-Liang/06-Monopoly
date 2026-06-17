@@ -127,6 +127,10 @@ namespace Monopoly.Shop
             }
 
             int rawCost = shop.Data.baseUpgradeCost + (shop.Level - 1) * 25;
+            if (shop.Data != null && shop.Data.growthProfile != null)
+            {
+                rawCost = shop.Data.baseUpgradeCost + (shop.Level - 1) * shop.Data.growthProfile.ownedUpgradeCostStepPerLevel;
+            }
             return Mathf.Max(0, rawCost - shop.UpgradeDiscount);
         }
 

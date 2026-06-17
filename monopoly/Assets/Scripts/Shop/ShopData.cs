@@ -1,5 +1,6 @@
 using Monopoly.Utils;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Monopoly.Shop
 {
@@ -10,12 +11,26 @@ namespace Monopoly.Shop
         public string shopName;
         public ShopCategory category;
         public ShopRole role;
-        public int acquireCost = 100;
+        [Header("Core Economy")]
+        [FormerlySerializedAs("acquireCost")]
+        public int baseAcquireCost = 100;
         public int rebuildCost = 150;
-        public int baseIncome = 30;
         public int baseUpgradeCost = 50;
+        public int baseRent = 15;
+        [FormerlySerializedAs("baseIncome")]
+        public int baseCustomerProfit = 30;
+        public ShopGrowthProfile growthProfile;
+        [Header("Visual")]
+        public GameObject shopModelPrefab;
+        public Vector3 shopModelScale = Vector3.one;
+        public Vector3 shopModelLocalOffset = Vector3.zero;
+        [Header("Attraction")]
+        [FormerlySerializedAs("baseAttraction")]
+        public float baseAttractionRate = 0f;
         [Header("Customer Stay")]
-        public float customerStopFlatModifier = 0.8f;
-        public float customerStopMultiplier = 1f;
+        [FormerlySerializedAs("customerStopFlatModifier")]
+        public float baseCustomerStayDuration = 0.8f;
+        [FormerlySerializedAs("customerStopMultiplier")]
+        public float customerStayDurationMultiplier = 1f;
     }
 }

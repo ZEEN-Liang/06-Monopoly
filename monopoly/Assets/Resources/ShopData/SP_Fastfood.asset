@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07df3503639b8d040930f2b89639c177, type: 3}
+  m_Name: SP_Fastfood
+  m_EditorClassIdentifier: 
+  entries:
+  - shopData: {fileID: 11400000, guid: 46df1c0de5bfce24798f27d9a0f2f2cc, type: 2}
+    weight: 1
+    enabled: 1
+  - shopData: {fileID: 11400000, guid: 702c8d16afc86d6438d6a9dc2955ecfa, type: 2}
+    weight: 1
+    enabled: 1
+  - shopData: {fileID: 11400000, guid: 22129c3b90960f74282653024ff19495, type: 2}
+    weight: 1
+    enabled: 1
+  - shopData: {fileID: 11400000, guid: 07f59dba539150d4ebeb7f8be2b1e19a, type: 2}
+    weight: 1
+    enabled: 1
+  - shopData: {fileID: 11400000, guid: e43f5b7d4e27c964a9eca4d9987f00f2, type: 2}
+    weight: 1
+    enabled: 1

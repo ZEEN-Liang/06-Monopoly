@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 749e690b4418ec94abda364adadd4b4b, type: 3}
+  m_Name: SCP_Test
+  m_EditorClassIdentifier: 
+  entries:
+  - category: 0
+    weight: 1
+    enabled: 1
+    shopPool: {fileID: 11400000, guid: 23e48f4eb2c83d3449bd7f41e57be97f, type: 2}
+  - category: 1
+    weight: 1
+    enabled: 1
+    shopPool: {fileID: 11400000, guid: 870088a619e7e0044b0ffeb8dad6c6b1, type: 2}
+  - category: 2
+    weight: 1
+    enabled: 1
+    shopPool: {fileID: 11400000, guid: d7fe1ee58b1c2ea4fbf4e590c20f3c58, type: 2}
+  - category: 3
+    weight: 1
+    enabled: 1
+    shopPool: {fileID: 11400000, guid: 8cc8a3e3ea81ded499eeee4cc7bf683a, type: 2}

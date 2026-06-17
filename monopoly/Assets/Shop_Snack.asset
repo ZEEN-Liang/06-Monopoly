@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shopId: snack
   shopName: Snack
-  category: 0
+  category: 1
   role: 0
   acquireCost: 80
   rebuildCost: 120

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shopId: milk_tea
   shopName: Mlik Tea
-  category: 1
+  category: 0
   role: 0
   acquireCost: 100
   rebuildCost: 150

@@ -162,6 +162,18 @@ MonoBehaviour:
   bindNode: {fileID: 5691278396676585691}
   showDebugLabel: 1
   debugLabelOffset: {x: 0, y: 1.2, z: 0}
+  faceCameraAlways: 1
+  placeholderRenderer: {fileID: 0}
+  modelAnchor: {fileID: 0}
+  tileModelPrefab: {fileID: 0}
+  hidePlaceholderWhenModelLoaded: 1
+  tileModelLocalPosition: {x: 0, y: 0, z: 0}
+  tileModelLocalEulerAngles: {x: 0, y: 0, z: 0}
+  tileModelLocalScale: {x: 1, y: 1, z: 1}
+  selectionOutlineColor: {r: 1, g: 0.9, b: 0.2, a: 1}
+  selectionOutlineThickness: 0.08
+  selectionOutlineHeight: 0.18
+  selectionOutlinePadding: 0.08
   eventManager: {fileID: 0}
   tileRenderer: {fileID: 0}
   eventColor: {r: 1, g: 0.85, b: 0.3, a: 1}

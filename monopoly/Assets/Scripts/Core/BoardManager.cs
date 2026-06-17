@@ -11,6 +11,7 @@ namespace Monopoly.Core
         [SerializeField] private List<BoardTile> allTiles = new List<BoardTile>();
 
         public PathNode StartNode => mainPath != null && mainPath.Count > 0 ? mainPath[0] : null;
+        public int MainPathCount => mainPath != null ? mainPath.Count : 0;
 
         public PathNode GetNextNode(PathNode currentNode, int routeIndex = 0)
         {

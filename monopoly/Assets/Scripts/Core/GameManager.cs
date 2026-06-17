@@ -3,6 +3,7 @@ using Monopoly.UI;
 using Monopoly.Board;
 using System.Collections.Generic;
 using UnityEngine;
+using Monopoly.Customer;
 
 namespace Monopoly.Core
 {
@@ -18,18 +19,31 @@ namespace Monopoly.Core
         [Header("Periodic Rent")]
         [SerializeField] private bool enablePeriodicRent = true;
         [SerializeField] private float rentIntervalSeconds = 60f;
-        [SerializeField] private int rentPerOwnedShop = 15;
-        [SerializeField] private int extraRentPerShopLevel = 10;
         [SerializeField] private bool rentAlsoAppliesToRebuildingShops = true;
+        [Header("Evaluation Customer")]
+        [SerializeField] private bool enableEvaluationCustomer = true;
+        [SerializeField] private float evaluationTriggerSeconds = 600f;
+        [SerializeField] private CustomerData evaluationCustomerData;
+        [SerializeField] private int evaluationVictorySpendTarget = 300;
+        [SerializeField] private int evaluationGradeSThreshold = 260;
+        [SerializeField] private int evaluationGradeAThreshold = 180;
+        [SerializeField] private int evaluationGradeBThreshold = 100;
 
         private float rentTimer;
+        private float gameElapsedSeconds;
+        private bool evaluationTriggered;
+        private bool evaluationCompleted;
 
         public bool EnablePeriodicRent => enablePeriodicRent;
         public float RentIntervalSeconds => rentIntervalSeconds;
-        public int RentPerOwnedShop => rentPerOwnedShop;
-        public int ExtraRentPerShopLevel => extraRentPerShopLevel;
         public float RemainingRentTime => enablePeriodicRent ? Mathf.Max(0f, rentIntervalSeconds - rentTimer) : 0f;
         public int PendingRentAmount => CalculatePendingRentAmount();
+        public bool EnableEvaluationCustomer => enableEvaluationCustomer;
+        public bool EvaluationTriggered => evaluationTriggered;
+        public float EvaluationTriggerSeconds => evaluationTriggerSeconds;
+        public float RemainingEvaluationTime => enableEvaluationCustomer && !evaluationTriggered
+            ? Mathf.Max(0f, evaluationTriggerSeconds - gameElapsedSeconds)
+            : 0f;
 
         public bool IsGameRunning { get; private set; }
 
@@ -58,7 +72,27 @@ namespace Monopoly.Core
         {
             SyncPlayerDataReference();
 
-            if (!IsGameRunning || !enablePeriodicRent || playerData == null)
+            if (!IsGameRunning || playerData == null)
+            {
+                return;
+            }
+
+            gameElapsedSeconds += Time.deltaTime;
+            playerData.TickDebtTimer(Time.deltaTime);
+            if (playerData.IsDebtOverdue)
+            {
+                uiManager?.ShowTransientMessage("Debt deadline missed. Game Over.");
+                EndGame(false);
+                return;
+            }
+
+            if (enableEvaluationCustomer && !evaluationTriggered && gameElapsedSeconds >= evaluationTriggerSeconds)
+            {
+                StartEvaluationCustomerRun();
+                return;
+            }
+
+            if (!enablePeriodicRent)
             {
                 return;
             }
@@ -89,6 +123,9 @@ namespace Monopoly.Core
             IsGameRunning = true;
             Time.timeScale = 1f;
             rentTimer = 0f;
+            gameElapsedSeconds = 0f;
+            evaluationTriggered = false;
+            evaluationCompleted = false;
 
             if (customerFlowManager != null)
             {
@@ -134,6 +171,22 @@ namespace Monopoly.Core
             }
         }
 
+        public void EndGame(bool success, string title, string body)
+        {
+            IsGameRunning = false;
+            rentTimer = 0f;
+
+            if (customerFlowManager != null)
+            {
+                customerFlowManager.StopSpawning();
+            }
+
+            if (uiManager != null)
+            {
+                uiManager.ShowGameResult(title, body);
+            }
+        }
+
         public void PauseGame()
         {
             Time.timeScale = 0f;
@@ -151,7 +204,7 @@ namespace Monopoly.Core
                 return;
             }
 
-            if (playerData.Money < 0 || playerData.Satisfaction <= 0)
+            if (playerData.IsDebtOverdue)
             {
                 EndGame(false);
             }
@@ -177,24 +230,98 @@ namespace Monopoly.Core
                 return;
             }
 
-            if (!activePlayerData.SpendMoney(totalRent))
+            int debtBefore = activePlayerData.CurrentDebtAmount;
+            int moneyBefore = activePlayerData.Money;
+
+            if (!activePlayerData.TrySpendMoneyWithDebt(totalRent))
             {
                 if (uiManager != null)
                 {
-                    uiManager.ShowTransientMessage($"Rent due: {totalRent}. Unable to pay.");
+                    uiManager.ShowTransientMessage($"Rent due: {totalRent}. Debt is disabled.");
                 }
-
-                EndGame(false);
                 return;
             }
 
             if (uiManager != null)
             {
-                uiManager.ShowTransientMessage($"Paid rent: -{totalRent} ({ownedShopCount} shops)");
+                int debtAdded = Mathf.Max(0, activePlayerData.CurrentDebtAmount - debtBefore);
+                int cashPaid = Mathf.Min(totalRent, moneyBefore);
+                if (debtAdded > 0)
+                {
+                    uiManager.ShowTransientMessage($"Paid rent: -{cashPaid}, Debt +{debtAdded} ({ownedShopCount} shops)");
+                }
+                else
+                {
+                    uiManager.ShowTransientMessage($"Paid rent: -{totalRent} ({ownedShopCount} shops)");
+                }
             }
 
             Debug.Log($"Periodic rent paid: {totalRent} for {ownedShopCount} owned shops.");
             CheckGameState();
+        }
+
+        private void StartEvaluationCustomerRun()
+        {
+            evaluationTriggered = true;
+
+            if (customerFlowManager != null)
+            {
+                customerFlowManager.StopSpawning();
+            }
+
+            uiManager?.ShowTransientMessage("VIP customer arrived. Final evaluation has started.");
+
+            CustomerAgent evaluationCustomer = customerFlowManager != null
+                ? customerFlowManager.SpawnEvaluationCustomer(evaluationCustomerData, OnEvaluationCustomerCompleted)
+                : null;
+
+            if (evaluationCustomer == null)
+            {
+                EndGame(false, "Evaluation Failed", "Unable to spawn the evaluation customer.");
+            }
+        }
+
+        private void OnEvaluationCustomerCompleted(CustomerAgent customer)
+        {
+            if (evaluationCompleted)
+            {
+                return;
+            }
+
+            evaluationCompleted = true;
+            int spendTotal = customer != null ? customer.PlayerShopSpendTotal : 0;
+
+            if (spendTotal >= evaluationVictorySpendTarget)
+            {
+                EndGame(true, "Victory", $"VIP spend: {spendTotal}\nTarget: {evaluationVictorySpendTarget}\nLevel cleared.");
+                return;
+            }
+
+            string grade = ResolveEvaluationGrade(spendTotal);
+            EndGame(
+                false,
+                "Evaluation Complete",
+                $"VIP spend: {spendTotal}\nTarget: {evaluationVictorySpendTarget}\nGrade: {grade}");
+        }
+
+        private string ResolveEvaluationGrade(int spendTotal)
+        {
+            if (spendTotal >= evaluationGradeSThreshold)
+            {
+                return "S";
+            }
+
+            if (spendTotal >= evaluationGradeAThreshold)
+            {
+                return "A";
+            }
+
+            if (spendTotal >= evaluationGradeBThreshold)
+            {
+                return "B";
+            }
+
+            return "C";
         }
 
         private int GetRentChargedShopCount()
@@ -238,9 +365,7 @@ namespace Monopoly.Core
                     continue;
                 }
 
-                int shopLevel = shopTile.CurrentShop != null ? Mathf.Max(1, shopTile.CurrentShop.Level) : 1;
-                totalRent += Mathf.Max(0, rentPerOwnedShop);
-                totalRent += Mathf.Max(0, shopLevel - 1) * Mathf.Max(0, extraRentPerShopLevel);
+                totalRent += Mathf.Max(0, shopTile.GetCurrentRent());
             }
 
             return totalRent;

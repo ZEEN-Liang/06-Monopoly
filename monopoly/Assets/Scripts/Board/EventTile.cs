@@ -58,7 +58,7 @@ namespace Monopoly.Board
         {
             if (tileRenderer == null)
             {
-                tileRenderer = GetComponentInChildren<Renderer>();
+                tileRenderer = GetPlaceholderRenderer();
             }
 
             if (tileRenderer != null)

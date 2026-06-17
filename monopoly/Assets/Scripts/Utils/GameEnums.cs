@@ -12,12 +12,10 @@ namespace Monopoly.Utils
 
     public enum ShopCategory
     {
+        Exotic,
         Snack,
-        Drink,
-        Dessert,
-        Seafood,
-        MainDish,
-        Support
+        Chinese,
+        FastFood
     }
 
     public enum ShopRole
@@ -39,11 +37,9 @@ namespace Monopoly.Utils
 
     public enum CustomerType
     {
-        Normal,
-        Student,
-        WhiteCollar,
-        Tourist,
-        Foodie
+        Student = 0,
+        Merchant = 1,
+        Worker = 2
     }
 
     public enum GamePhase

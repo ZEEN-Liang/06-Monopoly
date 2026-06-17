@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d6fc900228e0ad4faac74cfd1ba323a, type: 3}
+  m_Name: SD_Taco
+  m_EditorClassIdentifier: 
+  shopId: Taco
+  shopName: taco
+  category: 0
+  role: 0
+  baseAcquireCost: 100
+  rebuildCost: 150
+  baseUpgradeCost: 50
+  baseRent: 15
+  baseCustomerProfit: 30
+  growthProfile: {fileID: 11400000, guid: 6097ea05746693e4095961f3208c411e, type: 2}
+  shopModelPrefab: {fileID: 824365404203359278, guid: 15d59556497e6074c81e1b04db6c9f5d, type: 3}
+  shopModelScale: {x: 1, y: 1, z: 1}
+  shopModelLocalOffset: {x: 0, y: 0, z: 0}
+  baseAttractionRate: 0
+  baseCustomerStayDuration: 0.8
+  customerStayDurationMultiplier: 1

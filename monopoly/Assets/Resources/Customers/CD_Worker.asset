@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91007c30ab3384f4facf88e054fb0312, type: 3}
+  m_Name: CD_Worker
+  m_EditorClassIdentifier: 
+  customerName: Worker
+  customerType: 2
+  minMoveStep: 2
+  maxMoveStep: 4
+  baseSpend: 24
+  attractionSensitivity: 0.95
+  preferredAttractionBonus: 0.4
+  baseStopDuration: 2.6
+  stopDurationVariance: 0.25
+  minStopDuration: 1.1
+  preferredCategories:
+  - 2
+  - 0
+  - 3

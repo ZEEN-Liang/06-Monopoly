@@ -26,6 +26,8 @@ namespace Monopoly.UI
         [SerializeField] private Text turnText;
         [SerializeField] private Text shopCountText;
         [SerializeField] private Text rentText;
+        [SerializeField] private Text evaluationText;
+        [SerializeField] private Text debtText;
         [SerializeField] private Text messageText;
         [SerializeField] private Button rollDiceButton;
         [SerializeField] private Text rollDiceButtonText;
@@ -53,6 +55,12 @@ namespace Monopoly.UI
         [SerializeField] private Text choiceOneText;
         [SerializeField] private Text choiceTwoText;
         [SerializeField] private Text choiceThreeText;
+        [Header("Game Result UI")]
+        [SerializeField] private GameObject gameResultPanel;
+        [SerializeField] private Text gameResultTitleText;
+        [SerializeField] private Text gameResultBodyText;
+        [SerializeField] private Button gameResultConfirmButton;
+        [SerializeField] private Text gameResultConfirmText;
 
         private Action pendingConfirmAction;
         private Action pendingCancelAction;
@@ -65,7 +73,8 @@ namespace Monopoly.UI
 
         public bool IsBlockingChoiceActive =>
             (modalPanel != null && modalPanel.activeSelf) ||
-            (tripleChoicePanel != null && tripleChoicePanel.activeSelf);
+            (tripleChoicePanel != null && tripleChoicePanel.activeSelf) ||
+            (gameResultPanel != null && gameResultPanel.activeSelf);
         public PlayerData BoundPlayerData => playerData;
 
         private void Awake()
@@ -106,7 +115,9 @@ namespace Monopoly.UI
             EnsureHud();
             if (moneyText != null)
             {
-                moneyText.text = $"Money: {value}";
+                moneyText.text = playerData != null && playerData.HasDebt
+                    ? $"资金: {value} | 负债: {playerData.CurrentDebtAmount}"
+                    : $"资金: {value}";
             }
         }
 
@@ -115,8 +126,8 @@ namespace Monopoly.UI
             EnsureHud();
             if (satisfactionText != null)
             {
-                string rollInfo = playerData != null ? $" | Rolls: {playerData.TotalDiceRollCount}" : string.Empty;
-                satisfactionText.text = $"Satisfaction: {value}{rollInfo}";
+                string rollInfo = playerData != null ? $" | 掷骰: {playerData.TotalDiceRollCount}" : string.Empty;
+                satisfactionText.text = $"满意度: {value}{rollInfo}";
             }
         }
 
@@ -125,17 +136,17 @@ namespace Monopoly.UI
             EnsureHud();
             if (turnText != null)
             {
-                turnText.text = $"Turn: {turn}";
+                turnText.text = $"回合: {turn}";
             }
 
-            SetMessage($"Turn {turn} start. Click Dice to roll.");
-            Debug.Log($"Turn {turn} start. Click Dice to roll.");
+            SetMessage($"第 {turn} 回合开始，点击骰子行动。");
+            Debug.Log($"第 {turn} 回合开始，点击骰子行动。");
         }
 
         public void ShowDiceResult(int value)
         {
-            SetMessage($"Dice roll: {value}");
-            Debug.Log($"Dice roll: {value}");
+            SetMessage($"骰子点数: {value}");
+            Debug.Log($"骰子点数: {value}");
         }
 
         public void ShowShopAcquirePanel(ShopTile shopTile, Action onConfirm, Action onCancel)
@@ -146,7 +157,7 @@ namespace Monopoly.UI
             }
 
             string shopName = shopTile.OriginalShopData != null ? shopTile.OriginalShopData.shopName : shopTile.name;
-            int cost = shopTile.OriginalShopData != null ? shopTile.OriginalShopData.acquireCost : 0;
+            int cost = shopTile.GetCurrentAcquireCost();
 
             ShowChoiceModal(
                 "Buy Shop?",
@@ -291,8 +302,57 @@ namespace Monopoly.UI
 
         public void ShowGameResult(bool success)
         {
-            SetMessage(success ? "Game Success" : "Game Failed");
-            Debug.Log(success ? "Game Success" : "Game Failed");
+            EnsureHud();
+            EnsureGameResultPanel();
+
+            string title = success ? "Game Success" : "Game Over";
+            string body = success
+                ? "Run complete."
+                : BuildGameOverBody();
+
+            if (gameResultTitleText != null)
+            {
+                gameResultTitleText.text = title;
+            }
+
+            if (gameResultBodyText != null)
+            {
+                gameResultBodyText.text = body;
+            }
+
+            if (gameResultPanel != null)
+            {
+                gameResultPanel.SetActive(true);
+            }
+
+            SetMessage(title);
+            Time.timeScale = 0f;
+            Debug.Log(title);
+        }
+
+        public void ShowGameResult(string title, string body)
+        {
+            EnsureHud();
+            EnsureGameResultPanel();
+
+            if (gameResultTitleText != null)
+            {
+                gameResultTitleText.text = title;
+            }
+
+            if (gameResultBodyText != null)
+            {
+                gameResultBodyText.text = body;
+            }
+
+            if (gameResultPanel != null)
+            {
+                gameResultPanel.SetActive(true);
+            }
+
+            SetMessage(title);
+            Time.timeScale = 0f;
+            Debug.Log(title);
         }
 
         public void ShowTransientMessage(string message)
@@ -360,7 +420,7 @@ namespace Monopoly.UI
 
             if (shopCountText != null)
             {
-                shopCountText.text = $"Owned Shops: {playerData.OwnedShops.Count}";
+                shopCountText.text = $"已拥有店铺: {playerData.OwnedShops.Count}";
             }
 
             if (rentText != null)
@@ -369,11 +429,40 @@ namespace Monopoly.UI
                 if (gameManager != null && gameManager.EnablePeriodicRent)
                 {
                     int seconds = Mathf.CeilToInt(gameManager.RemainingRentTime);
-                    rentText.text = $"Rent In: {seconds}s  Fee: {gameManager.PendingRentAmount}";
+                    rentText.text = $"租金倒计时: {seconds}秒  金额: {gameManager.PendingRentAmount}";
                 }
                 else
                 {
-                    rentText.text = "Rent: Off";
+                    rentText.text = "租金: 已关闭";
+                }
+            }
+
+            if (evaluationText != null)
+            {
+                GameManager gameManager = GameManager.Instance;
+                if (gameManager == null || !gameManager.EnableEvaluationCustomer)
+                {
+                    evaluationText.text = "评审顾客: 已关闭";
+                }
+                else if (gameManager.EvaluationTriggered)
+                {
+                    evaluationText.text = "评审顾客: 进行中";
+                }
+                else
+                {
+                    evaluationText.text = $"评审顾客到达: {FormatCountdown(gameManager.RemainingEvaluationTime)}";
+                }
+            }
+
+            if (debtText != null)
+            {
+                debtText.text = playerData.HasDebt
+                    ? $"负债: {playerData.CurrentDebtAmount}\n偿还倒计时: {FormatCountdown(playerData.DebtRemainingSeconds)}"
+                    : "负债: 无";
+
+                if (playerData.EnableDebtInterest)
+                {
+                    debtText.text += $"\n利息: +{Mathf.RoundToInt(playerData.DebtInterestRate * 100f)}% / {Mathf.CeilToInt(playerData.DebtInterestIntervalSeconds)}秒";
                 }
             }
 
@@ -383,20 +472,21 @@ namespace Monopoly.UI
             }
             else if (turnManager != null && turnText != null)
             {
-                turnText.text = $"Turn: {turnManager.CurrentTurn}";
+                turnText.text = $"回合: {turnManager.CurrentTurn}";
             }
 
         }
 
         private void EnsureHud()
         {
-            if (hudCanvas != null && moneyText != null && satisfactionText != null && turnText != null && shopCountText != null && rentText != null && messageText != null)
+            if (hudCanvas != null && moneyText != null && satisfactionText != null && turnText != null && shopCountText != null && rentText != null && evaluationText != null && debtText != null && messageText != null)
             {
                 EnsureEventSystem();
                 EnsureChoicePanel();
                 EnsureTripleChoicePanel();
                 EnsureInspectPanel();
                 EnsureRollDiceButton();
+                EnsureGameResultPanel();
                 return;
             }
 
@@ -415,7 +505,7 @@ namespace Monopoly.UI
             panelRect.anchorMax = new Vector2(0f, 1f);
             panelRect.pivot = new Vector2(0f, 1f);
             panelRect.anchoredPosition = new Vector2(20f, -20f);
-            panelRect.sizeDelta = new Vector2(360f, 180f);
+            panelRect.sizeDelta = new Vector2(360f, 250f);
 
             Image panelImage = panelObject.AddComponent<Image>();
             panelImage.color = new Color(1f, 0.97f, 0.9f, 0.78f);
@@ -425,13 +515,18 @@ namespace Monopoly.UI
             turnText = CreateText(panelObject.transform, "TurnText", new Vector2(16f, -76f));
             shopCountText = CreateText(panelObject.transform, "ShopCountText", new Vector2(16f, -106f));
             rentText = CreateText(panelObject.transform, "RentText", new Vector2(16f, -136f), 20);
-            messageText = CreateText(panelObject.transform, "MessageText", new Vector2(16f, -166f), 18);
+            evaluationText = CreateText(panelObject.transform, "EvaluationText", new Vector2(16f, -162f), 18);
+            evaluationText.rectTransform.sizeDelta = new Vector2(320f, 24f);
+            debtText = CreateText(panelObject.transform, "DebtText", new Vector2(16f, -190f), 18);
+            debtText.rectTransform.sizeDelta = new Vector2(320f, 42f);
+            messageText = CreateText(panelObject.transform, "MessageText", new Vector2(16f, -228f), 18);
 
             EnsureEventSystem();
             EnsureChoicePanel();
             EnsureTripleChoicePanel();
             EnsureInspectPanel();
             EnsureRollDiceButton();
+            EnsureGameResultPanel();
         }
 
         private void TryResolveRuntimeBindings()
@@ -699,6 +794,34 @@ namespace Monopoly.UI
             return $"{choiceData.choiceText}\n{moneyPart}  {satisfactionPart}";
         }
 
+        private string BuildGameOverBody()
+        {
+            if (playerData == null)
+            {
+                return "The run has ended.";
+            }
+
+            if (playerData.IsDebtOverdue)
+            {
+                return $"Debt deadline missed.\nDebt: {playerData.CurrentDebtAmount}";
+            }
+
+            if (playerData.Satisfaction <= 0)
+            {
+                return "Satisfaction dropped to 0.";
+            }
+
+            return "The run has ended.";
+        }
+
+        private string FormatCountdown(float seconds)
+        {
+            int clampedSeconds = Mathf.Max(0, Mathf.CeilToInt(seconds));
+            int minutes = clampedSeconds / 60;
+            int remainSeconds = clampedSeconds % 60;
+            return $"{minutes:00}:{remainSeconds:00}";
+        }
+
         private void EnsureChoicePanel()
         {
             if (modalPanel != null && modalTitleText != null && modalBodyText != null && confirmButton != null && cancelButton != null)
@@ -860,6 +983,43 @@ namespace Monopoly.UI
             tripleChoicePanel.SetActive(false);
         }
 
+        private void EnsureGameResultPanel()
+        {
+            if (gameResultPanel != null && gameResultTitleText != null && gameResultBodyText != null && gameResultConfirmButton != null)
+            {
+                return;
+            }
+
+            GameObject panelObject = new GameObject("GameResultPanel");
+            panelObject.transform.SetParent(hudCanvas.transform, false);
+            gameResultPanel = panelObject;
+
+            RectTransform panelRect = panelObject.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(420f, 220f);
+
+            Image panelImage = panelObject.AddComponent<Image>();
+            panelImage.color = new Color(0.98f, 0.95f, 0.88f, 0.98f);
+
+            gameResultTitleText = CreateText(panelObject.transform, "GameResultTitle", new Vector2(24f, -24f), 28);
+            gameResultBodyText = CreateText(panelObject.transform, "GameResultBody", new Vector2(24f, -80f), 22);
+            gameResultBodyText.rectTransform.sizeDelta = new Vector2(360f, 80f);
+            gameResultBodyText.alignment = TextAnchor.UpperLeft;
+
+            gameResultConfirmButton = CreateButton(panelObject.transform, "GameResultConfirmButton", new Vector2(140f, -168f), new Vector2(140f, 42f));
+            gameResultConfirmText = gameResultConfirmButton.GetComponentInChildren<Text>();
+            if (gameResultConfirmText != null)
+            {
+                gameResultConfirmText.text = "OK";
+            }
+
+            gameResultConfirmButton.onClick.AddListener(HandleGameResultConfirmClicked);
+            gameResultPanel.SetActive(false);
+        }
+
         private void EnsureEventSystem()
         {
             if (FindObjectOfType<EventSystem>() != null)
@@ -999,6 +1159,14 @@ namespace Monopoly.UI
             CloseChoiceModal();
         }
 
+        private void HandleGameResultConfirmClicked()
+        {
+            if (gameResultPanel != null)
+            {
+                gameResultPanel.SetActive(false);
+            }
+        }
+
         private void HandleRollDiceClicked()
         {
             Debug.Log("Roll dice button clicked.");
@@ -1057,7 +1225,7 @@ namespace Monopoly.UI
             }
             if (interactable && playerData != null && turnManager != null)
             {
-                interactable = playerData.CanAfford(turnManager.DiceRollCost);
+                interactable = true;
             }
 
             rollDiceButton.interactable = interactable;
