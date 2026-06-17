@@ -65,6 +65,7 @@
     <Compile Include="Assets\Scripts\Core\TurnManager.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerPawn.cs" />
     <Compile Include="Assets\Scripts\Board\UpgradeTile.cs" />
+    <Compile Include="Assets\Scripts\Core\OrbitCameraController.cs" />
     <Compile Include="Assets\Scripts\Shop\ShopUpgradeOptionData.cs" />
     <Compile Include="Assets\Scripts\Customer\CustomerFlowManager.cs" />
     <Compile Include="Assets\Scripts\Player\PlayerData.cs" />
@@ -81,7 +82,9 @@
     <Compile Include="Assets\Scripts\Shop\ShopSystem.cs" />
     <Compile Include="Assets\Scripts\Shop\ShopInstance.cs" />
     <Compile Include="Assets\Scripts\Core\DemoSceneBootstrap.cs" />
-    <Compile Include="Assets\Scripts\Core\OrbitCameraController.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\Resources\Map\particle\Materials\UnlitVertexColour_Alpha.shader" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
